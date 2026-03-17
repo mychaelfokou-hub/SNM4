@@ -1,0 +1,68 @@
+/* App_Mike/style.css - Struttura Base Condivisa */
+/* Questo file contiene SOLO gli stili identici in tutte le pagine per non alterare il design */
+
+/* --- IMPOSTAZIONI GENERALI --- */
+body {
+    background-color: #000; /* Imposta lo sfondo della pagina su nero assoluto */
+    color: #b3b3b3; 
+    font-family: 'Circular Std', Helvetica, Arial, sans-serif; /* Definisce il font principale e quelli di riserva */
+    overflow: hidden; /* Blocca lo scroll della finestra principale (scrollano solo i div interni) */
+    margin: 0; /* Rimuove i margini predefiniti del browser per riempire tutto lo schermo */
+}
+
+a {
+    text-decoration: none; /* Rimuove la sottolineatura standard dai link */
+    color: inherit; /* Il link eredita il colore del testo genitore (non diventa blu) */
+    transition: 0.3s; /* Aggiunge un'animazione fluida di 0.3s ai cambiamenti di stato */
+}
+
+a:hover {
+    color: white; 
+}
+
+/* --- LAYOUT PRINCIPALE (La gabbia del sito) --- */
+.wrapper {
+    display: flex; /* Attiva Flexbox per affiancare sidebar e contenuto principale */
+    height: 100vh; 
+    padding-bottom: 90px; /* Lascia uno spazio vuoto in basso per il Player musicale fisso */
+}
+
+/* --- SIDEBAR SINISTRA --- */
+.sidebar {
+    width: 280px; 
+    background-color: #000; 
+    padding: 24px 10px; /* Spaziatura interna (Top/Bottom, Left/Right) */
+
+    /*Flexbox setting: per gestire gli elementi interni verticalmente*/
+    display: flex; /*Attiva Flexbox */
+    flex-direction: column; /*Impila gli elementi della sidebar uno sotto l'altro*/
+    flex-shrink: 0; /*Impedisce alla sidebar di restringersi se lo schermo è piccolo*/
+}
+
+/* --- CONTENUTO CENTRALE (Struttura) --- */
+/* Nota: I colori di sfondo (gradienti) rimangono nei file HTML specifici per non cambiare il design */
+.main-content {
+    flex-grow: 1; /* Occupa tutto lo spazio rimanente disponibile in larghezza */
+    background-color: #121212; 
+    border-radius: 8px; 
+    margin: 8px 8px 0 0; 
+    overflow-y: auto; /* Abilita la barra di scorrimento verticale solo se il contenuto eccede */
+    position: relative; /* confina qs cosa io creo un futuro nel main, nello spazzio ad esso dedicato, in dipendenemente dala posizione che specifico */
+}
+
+/* --- SCROLLBAR ESTETICA (Opzionale, stile Spotify) --- */
+::-webkit-scrollbar {
+    width: 12px; 
+}
+::-webkit-scrollbar-track {
+    background: transparent; /* Rende invisibile il "binario" su cui scorre la barra */
+}
+::-webkit-scrollbar-thumb {
+    background-color: rgba(255,255,255,0.3); 
+    border-radius: 10px; 
+    border: 3px solid transparent; /* Crea un bordo trasparente per simulare spazio attorno al colore */
+    background-clip: content-box; /* Taglia il colore al contenuto: evita che il colore invada il bordo trasparente */
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255,255,255,0.5); /* Aumenta l'opacità della maniglia quando il mouse ci passa sopra */
+}

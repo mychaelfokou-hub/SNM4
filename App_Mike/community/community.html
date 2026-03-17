@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community - Spotify</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+
+    <link rel="stylesheet" href="../style.css">
+    
+    <script src="../auth.js"></script>
+    
+    <style> 
+        /* Override specifico per lo sfondo della Community */
+        .main-content {
+            background: linear-gradient(180deg, #442266 0%, #121212 300px); 
+        }
+        
+        /* HEADER COMMUNITY */
+        .community-header { padding: 40px 32px 20px; display: flex; justify-content: space-between; align-items: end; } /*space-between = spazio tra gli elementi*/
+        .header-title h1 { color: white; font-weight: 900; font-size: 3rem; margin: 0; }
+        .btn-create { background-color: white; color: black; border-radius: 30px; padding: 10px 24px; font-weight: 700; border: none; transition: 0.3s; }
+        .btn-create:hover { transform: scale(1.05); background-color: #f0f0f0; }
+
+        /* SEARCH BAR & FILTERS */
+        .search-container { padding: 0 32px 20px; position: sticky; top: 0; background-color: rgba(18,18,18,0.95); backdrop-filter: blur(10px); z-index: 10; padding-top: 20px; border-bottom: 1px solid #282828;}
+        
+        .search-wrapper { display: flex; gap: 10px; align-items: center; }
+        .search-input-group { position: relative; flex-grow: 1; max-width: 400px; }
+        .search-input { background-color: #2a2a2a; border: 0; border-radius: 30px; color: white; padding: 10px 40px; width: 100%; outline: none; }
+        .search-input:focus { background-color: #333; color: white; }
+        .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #b3b3b3; }
+        
+        .btn-filter { background-color: #2a2a2a; color: white; border: 1px solid transparent; border-radius: 30px; padding: 8px 20px; font-weight: 600; transition: 0.2s; white-space: nowrap; }
+        .btn-filter:hover, .btn-filter.active { background-color: #333; border-color: #1db954; color: #1db954; }
+
+        /* FILTER TAGS PANEL + STILE ANIMAZIONE APPARIZIONE E SPARIZIONE */
+        .filter-tags-panel { display: none; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding-bottom: 10px; animation: fadeIn 0.3s ease; } /*animation: fadeIn 0.3s ease = Animazione di fade-in */
+        .filter-tags-panel.show { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } } /* Animazione di fade-in */
+
+        /* COMMUNITY CARDS */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; padding: 20px 32px 50px; }
+        .comm-card { background-color: #181818; padding: 16px; border-radius: 8px; transition: 0.3s; cursor: pointer; position: relative; display: flex; flex-direction: column; height: 100%; }
+        .comm-card:hover { background-color: #282828; }
+        .comm-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 4px; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+        .comm-title { color: white; font-weight: 700; margin-bottom: 8px; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
+        .comm-desc { font-size: 0.85rem; color: #a7a7a7; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1; margin-bottom: 15px;}
+        .comm-members { font-size: 0.75rem; color: #b3b3b3; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; }
+        
+        /* BOTTONI CARD */
+        .btn-action { width: 100%; border-radius: 20px; padding: 8px 0; font-weight: 700; font-size: 0.9rem; border: 1px solid #727272; background: transparent; color: white; transition: 0.2s; }
+        .btn-action:hover { border-color: white; transform: scale(1.02); }
+        .btn-joined { background-color: #1db954; border-color: #1db954; color: black; }
+        .btn-joined:hover { background-color: #1ed760; border-color: #1ed760; }
+
+        /* TAGS STYLE */
+        .tag-chip {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid transparent;
+            border-radius: 15px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            display: inline-block;
+        }
+        .tag-chip:hover { background-color: rgba(255,255,255,0.25); transform: scale(1.05); }
+        .tag-chip.active { background-color: #1db954; color: black; font-weight: 700; border-color: #1db954; }
+        
+        /* Preview tags nella card */
+        .comm-tags-preview { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+        .mini-tag { font-size: 0.65rem; background-color: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; color: #b3b3b3; }
+
+        /* NUOVO: Badge Creatore */
+        .creator-badge {
+            background-color: #ffd700; /* Oro/Giallo */
+            color: black;
+            font-size: 0.55rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            margin-left: 8px;
+            vertical-align: middle;
+            display: inline-block;
+            line-height: normal;
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="sidebar d-none d-md-flex flex-column" id="global-sidebar-container"></div>
+
+    <div class="main-content">
+        <div class="community-header">
+            <div class="header-title">
+                <span class="text-uppercase fw-bold text-light" style="font-size: 0.8rem;">Social</span>
+                <h1>Community</h1>
+                <p class="text-white opacity-75">Trova la tua tribù musicale o creane una nuova</p>
+            </div>
+            <button class="btn-create" data-bs-toggle="modal" data-bs-target="#createModal"> <!--l'opzione di apertura modale avviene grazie a data-bs-toggle="modal". data-bs-target="#createModal"  specifica quale modale aprire al click del bottone-->
+                <i class="fas fa-plus me-2"></i>Crea Community
+            </button>
+        </div>
+
+        <div class="search-container">
+            <div class="search-wrapper">
+                <div class="search-input-group">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="commSearch" class="search-input" placeholder="Cerca community..." onkeyup="filtraCommunity()">
+                </div>
+                <button class="btn-filter" id="btnToggleFilters" onclick="toggleFilterPanel()">
+                    <i class="fas fa-filter me-2"></i>Filtra per Tag
+                </button>
+            </div>
+            <div id="filterTagsContainer" class="filter-tags-panel"></div>
+        </div>
+
+        <div id="communityGrid" class="grid-container"></div> <!--iniezione dalla funzione renderCommunities()-->
+    </div> 
+</div> 
+
+<div id="global-player-container"></div>
+
+<!--modela per creare una nuova community-->
+<div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">  <!--animazione modale bootstrap-->
+    <div class="modal-dialog modal-dialog-centered">                        <!--centra la modale verticalmente-->
+        <div class="modal-content bg-dark text-white">                      <!--contenitore a sfondo scuro e testo bianco-->
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">Crea la tua Community</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button> <!--btn-close crea automaticamente l'icona a forma di "X"-->
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nome Community</label>
+                    <input type="text" id="newCommName" class="form-control bg-secondary text-white border-0" placeholder="Es. Techno Lovers Milano">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrizione (Regole, Mood)</label>
+                    <textarea id="newCommDesc" class="form-control bg-secondary text-white border-0" rows="2" placeholder="Descrivi di cosa tratta il gruppo..."></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Tags della Community</label>
+                    <div id="createTagsContainer" class="d-flex flex-wrap gap-2"></div> <!--renderCreateTags()-->
+                </div>
+
+                <p class="text-muted small"><i class="fas fa-info-circle me-1"></i>Verrà assegnata una copertina casuale.</p>
+            </div>
+            <div class="modal-footer border-secondary"> 
+                <button type="button" class="btn btn-transparent text-white" data-bs-dismiss="modal">Annulla</button> 
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-bold" onclick="salvaNuovaCommunity()">Crea</button> <!--data-bs-dismiss="modal" - nasconde la modale quando il pulsante viene cliccato-->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="saveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Salva brano in...</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"><ul class="list-group list-group-flush" id="modalPlaylistList"></ul></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // --- COSTANTI TAGS ---
+    const AVAILABLE_TAGS = [
+        "Relax", "Carica", "Focus", "Malinconia", "Happy", 
+        "Allenamento", "Viaggio", "Party", "Studio", "Gaming",
+        "Hit", "Old School", "Discovery", "Instrumental"
+    ];
+    let selectedCreateTags = []; 
+    let selectedFilterTags = [];
+
+    // --- DATABASE ---
+    // Recupera le community salvate o inizializza un array vuoto se non esistono
+    let communities = window.getPublicData('spotify_communities') || [];
+    let myJoinedIds = window.getUserData('my_joined_communities') || [];
+
+    // --- INIT ---
+    window.onload = function() {
+        renderCommunities(communities);
+        renderCreateTags(); 
+        renderFilterTags(); // Inizializza i tag per il filtro
+    };
+
+    // --- LOGICA RENDERING CARD COMMUUNITY ---
+    function renderCommunities(list) {
+        const grid = document.getElementById('communityGrid');
+        grid.innerHTML = "";
+        
+        // Recupera email utente corrente per controllo Creatore
+        const currentUser = window.getCurrentUser();
+        const currentEmail = currentUser ? currentUser.email : null;
+
+        if(list.length === 0) {
+            grid.innerHTML = "<p class='text-secondary'>Nessuna community trovata.</p>";
+            return;
+        }
+
+        list.forEach(comm => {
+            const card = document.createElement('div');
+            card.className = "comm-card";
+            
+            //variabili dinamiche nella card community il cui aspetto varia in base che sia già membro o meno
+            const isJoined = myJoinedIds.includes(comm.id); /*controlla se l'utente ha già joinato la community*/
+            const btnText = isJoined ? "Vai alla Chat" : "Unisciti"; 
+            const btnClass = isJoined ? "btn-joined" : ""; 
+            const icon = isJoined ? "<i class='fas fa-comments me-2'></i>" : ""; 
+
+            // LOGICA BADGE CREATORE
+            const isCreator = (comm.creatorEmail === currentEmail);
+            const creatorBadge = isCreator ? `<span class="creator-badge">CREATORE</span>` : '';
+
+            let tagsHtml = "";
+            if(comm.tags && comm.tags.length > 0) {
+                tagsHtml = `<div class="comm-tags-preview">` + 
+                    comm.tags.map(t => `<span class="mini-tag">${t}</span>`).join('') + 
+                    `</div>`;
+            }
+            
+            /* Struttura della card della community */
+            card.innerHTML =`
+                <img src="${comm.img}" class="comm-img" alt="${comm.name}">
+                <div class="comm-title">
+                    ${comm.name}
+                    ${creatorBadge} </div>
+                <div class="comm-members"><i class="fas fa-user-friends"></i> ${comm.members} membri</div>
+                ${tagsHtml}
+                <div class="comm-desc">${comm.desc}</div>
+                <div style="margin-top: auto;">
+                    <button class="btn-action ${btnClass}" onclick="handleCommunityAction(event, '${comm.id}')">
+                        ${icon}${btnText}
+                    </button>
+                </div>
+            `;
+            
+            /*parola chiave riservata del linguaggio JavaScript, e rappresenta l'oggetto evento associato al click*/
+            card.addEventListener('click', (e) => {  
+                if(e.target.tagName !== 'BUTTON' && isJoined) {
+                    window.location.href = `x.community.html?id=${comm.id}`;
+                }
+            });
+
+            grid.appendChild(card);
+        });
+    }
+
+    // --- 3. ESECUZIONE FILTRAGGI CON TAGS ATTIVI (SALVATI IN ARRAY) INTERSECATI CON LA QUERY (TESTO + TAG) ---
+    window.filtraCommunity = function() {
+        const query = document.getElementById('commSearch').value.toLowerCase();
+        
+        const filtered = communities.filter(c => {
+            // 1. Filtro Testo (Nome)
+            const matchesName = c.name.toLowerCase().includes(query);
+            
+            // 2. Filtro Tags (Deve contenere TUTTI i tag selezionati)
+            const matchesTags = selectedFilterTags.length === 0 || //attenzione: selectedFilterTags è un array riempito quando l'utente seleziona i tag in renderFilterTags() in basso
+                (c.tags && selectedFilterTags.every(filterTag => c.tags.includes(filterTag)));
+            
+            return matchesName && matchesTags;
+        });
+        
+        renderCommunities(filtered);
+    }
+
+    // --- 1. APPARIZIONE E SPARIZIONE BOTTONE FILTRA PER TAG ---
+    window.toggleFilterPanel = function() {
+        const panel = document.getElementById('filterTagsContainer');
+        const btn = document.getElementById('btnToggleFilters');
+        
+        if (panel.classList.contains('show')) { /*utente clicca sul bottone dei tags: se il pannello è già visibile lo nasconde, quindi rimuove la classe 'show'*/
+            panel.classList.remove('show');
+            btn.classList.remove('active');
+        } else {
+            panel.classList.add('show'); /*altrimenti lo mostra aggiungendo la classe 'show'*/
+            btn.classList.add('active');
+        }
+    }
+
+    /*--- 2. ATTIVAZIONE TAG AL CLICK  ---*/
+    function renderFilterTags() {
+        const container = document.getElementById('filterTagsContainer');
+        container.innerHTML = "";
+        AVAILABLE_TAGS.forEach(tag => {
+            const isActive = selectedFilterTags.includes(tag); /*controlla se il tag è stato selezionato*/
+            const chip = document.createElement('span');
+            chip.className = `tag-chip ${isActive ? 'active' : ''}`;
+            chip.innerText = tag;
+            chip.onclick = () => {
+                if (selectedFilterTags.includes(tag)) { /*se il tag è già selezionato, lo rimuove dall'array*/
+                    selectedFilterTags = selectedFilterTags.filter(t => t !== tag);
+                } else {
+                    selectedFilterTags.push(tag); /*altrimenti lo aggiunge*/
+                }
+                renderFilterTags(); // Ridisegna i chip (colori)
+                filtraCommunity(); // Applica subito il filtro
+            };
+            container.appendChild(chip);
+        });
+    }
+
+    // diventa membro oppure entra nella community (se già membro)
+    window.handleCommunityAction = function(e, id) {
+        /*
+        Poiché il pulsante d'azione è annidato all'interno della card (entrambi con listener di click), 
+        l'evento si propagherebbe verso l'alto attivando entrambi i comportamenti, causando un redirect indesiderato
+        */
+        e.stopPropagation(); 
+
+        if (myJoinedIds.includes(id)) {
+            window.location.href = `x.community.html?id=${id}`;
+        } else {
+            myJoinedIds.push(id);
+            window.saveUserData('my_joined_communities', myJoinedIds);
+            
+            const comm = communities.find(c => c.id === id);
+            if(comm) {
+                comm.members++;
+                window.savePublicData('spotify_communities', communities);
+            }
+            renderCommunities(communities);
+            alert(`Ti sei unito a "${comm.name}"!`);
+        }
+    }
+
+    // CREAZIONE COMMUNITY
+
+    // CREAZIONE COMMUNITY (MODALE): TAGS
+    function renderCreateTags() {
+        const container = document.getElementById('createTagsContainer');
+        container.innerHTML = "";
+        AVAILABLE_TAGS.forEach(tag => {
+            const isActive = selectedCreateTags.includes(tag);
+            const chip = document.createElement('span');
+            chip.className = `tag-chip ${isActive ? 'active' : ''}`;
+            chip.innerText = tag;
+            chip.onclick = () => {
+                if(selectedCreateTags.includes(tag)) {
+                    selectedCreateTags = selectedCreateTags.filter(t => t !== tag);
+                } else {
+                    selectedCreateTags.push(tag);
+                }
+                renderCreateTags();
+            };
+            container.appendChild(chip);
+        });
+    }
+
+    // CREAZIONE COMMUNITY (MODALE): SALVATAGGIO
+    window.salvaNuovaCommunity = function() {
+        const name = document.getElementById('newCommName').value.trim();
+        const desc = document.getElementById('newCommDesc').value.trim();
+        
+        if(!name) return alert("Inserisci almeno il nome!");
+
+        const currentUser = window.getCurrentUser();
+        if(!currentUser) return alert("Devi essere loggato per creare una community");
+
+        const newComm = {
+            id: 'c' + Date.now(),
+            name: name,
+            desc: desc || "Nessuna descrizione.",
+            members: 1,
+            tags: selectedCreateTags, 
+            img: `https://picsum.photos/seed/${Date.now()}/300/300`,
+            creatorEmail: currentUser.email 
+        };
+
+        //sincronizzazioni salvataggio
+        communities.unshift(newComm); 
+        window.savePublicData('spotify_communities', communities); //lista communities generale
+
+        myJoinedIds.push(newComm.id);
+        window.saveUserData('my_joined_communities', myJoinedIds); //lista communities in cui sono memmbro (pk sono creatore quindi automaticamente membro)
+        
+
+        selectedCreateTags = []; 
+        document.getElementById('newCommName').value = ""; //recupera nel modale le sezioni "nome" e "descrizione"
+        document.getElementById('newCommDesc').value = "";
+        renderCreateTags();
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createModal'));//apre il modal per creare la community
+        modal.hide(); 
+        renderCommunities(communities); //aggiorna il feed con la community appena aggiunta
+    }
+</script>
+
+<script src="../layout.js"></script>
+</body>
+</html>

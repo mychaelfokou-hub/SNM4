@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Profilo Utente - Spotify</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+    <script src="../auth.js"></script>
+    
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: 'Circular Std', Helvetica, Arial, sans-serif;
+        }
+        
+        nav {
+            background-color: #000;
+            padding: 16px 24px; /*definisce altezza indirettametne*/
+            display: flex;
+            align-items: center;
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        .nav-item {  /*Home*/
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            font-weight: 600;
+            color: #b3b3b3;
+            border-radius: 4px;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover { color: white; background-color: #282828; }
+        .nav-icon { font-size: 24px; width: 24px; text-align: center; } /*Home*/
+
+        .form-container {
+            max-width: 500px;
+            margin: 40px auto;
+            background-color: #181818;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #000;
+        }
+        
+        .form-control, .form-select {
+            background-color: #2a2a2a;
+            border: none;
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background-color: #333;
+            color: white;
+            box-shadow: none;
+            border: 1px solid #1db954;
+        }
+        
+        .btn-save { background-color: #1db954; border: none; font-weight: bold; }
+        .btn-save:hover { background-color: #1ed760; transform: scale(1.02); }
+        
+        .btn-delete { background-color: #e91429; border: none; font-weight: bold; }
+        .btn-delete:hover { background-color: #ff0000; }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <h4 class="text-white mb-0 me-4"><i class="fab fa-spotify me-2"></i>Spotify</h4>
+        <a href="../home2.html">
+            <div class="nav-item">
+                <i class="fas fa-home nav-icon"></i> Home
+            </div>
+        </a>
+    </nav>
+
+    <div class="form-container">
+        <h2 class="text-center mb-4">👤 Il tuo profilo</h2>
+        <form id="profileForm">
+            <div class="mb-3">
+                <label class="form-label small text-secondary fw-bold">NOME UTENTE</label>
+                <input type="text" class="form-control" id="username" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small text-secondary fw-bold">EMAIL</label>
+                <input type="email" class="form-control" id="email" readonly style="opacity: 0.6; cursor: not-allowed;">
+            </div>
+            <div class="mb-3">
+                <label class="form-label small text-secondary fw-bold">GENERE PREFERITO</label>
+                <select class="form-select" id="preferences">
+                    <option value="" disabled>Seleziona un genere...</option>
+                    <option value="Hip-hop">Hip-hop</option>
+                    <option value="Afrobeats">Afrobeats</option>
+                    <option value="Pop">Pop</option>
+                    <option value="Rock">Rock</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small text-secondary fw-bold">ARTISTA PREFERITO</label>
+                <input type="text" class="form-control" id="artist">
+            </div>
+            
+            <button type="submit" class="btn btn-save w-100 text-white mb-3 py-2">💾 Salva Modifiche</button>
+        </form>
+        <hr class="text-secondary my-4">
+        <button class="btn btn-delete w-100 text-white py-2" onclick="deleteAccount()">❌ Cancella Account</button>
+    </div>
+
+    <script>
+        // --- 1. CARICAMENTO DATI ---
+        window.onload = function() {
+            const user = window.getCurrentUser(); // Usa la funzione globale di auth.js
+            if (!user) return;
+
+            // Carica Username ed Email
+            document.getElementById("username").value = user.username || user.nome || "";
+            document.getElementById("email").value = user.email || "";
+
+            // Carica Preferenze (2 opzioni di caricamento dal + specifico al + generico)
+            const isolato = window.getUserData('preferenze') || {}; 
+            document.getElementById("preferences").value = isolato.genre || user.preferences || "";  
+            document.getElementById("artist").value = isolato.artist || user.artistaPreferito || ""; 
+        };                                                                                           
+
+
+        // --- 2. SALVATAGGIO DATI --- 
+        document.getElementById("profileForm").addEventListener("submit", 
+            function(e) {
+                e.preventDefault();
+                
+                let user = window.getCurrentUser();
+                if(!user) return;
+
+                const nuovoNome = document.getElementById("username").value.trim();
+                const nuovoGenere = document.getElementById("preferences").value;
+                const nuovoArtista = document.getElementById("artist").value.trim();
+
+                //SALVATAGGIO TRIPLO
+                // A. Aggiorna Oggetto in Sessione (Immediato per Home)
+                user.username = nuovoNome;
+                user.nome = nuovoNome;
+                user.preferences = nuovoGenere;
+                user.artistaPreferito = nuovoArtista;
+                sessionStorage.setItem("utenteLoggato", JSON.stringify(user));
+
+                // B. Aggiorna Database Globale (Permanente al login)
+                let utenti = JSON.parse(localStorage.getItem("utenti")) || [];
+                const idx = utenti.findIndex(u => u.email === user.email);
+                if (idx !== -1) {  //Il Controllo: if (idx !== -1) significa "Se hai trovato l'utente nella lista...".
+                    utenti[idx] = user;
+                    localStorage.setItem("utenti", JSON.stringify(utenti));
+                }
+
+                // C. Aggiorna Spazio Isolato (Per la logica di memoria isolata)
+                window.saveUserData('preferenze', { genre: nuovoGenere, artist: nuovoArtista });
+
+                alert("Profilo aggiornato con successo!");
+                window.location.reload();
+            }
+        );
+
+        // --- 3. CANCELLAZIONE ACCOUNT ---
+        function deleteAccount() {
+             if (confirm("ATTENZIONE: Stai per eliminare il tuo account e tutti i tuoi dati privati. Continuare?")) {
+                const user = window.getCurrentUser();
+                
+                // Rimuovi da DB globale
+                let utenti = JSON.parse(localStorage.getItem("utenti")) || [];
+                utenti = utenti.filter(u => u.email !== user.email); //FILTRA un array che ha tutte le mail tranne quella attuale
+                localStorage.setItem("utenti", JSON.stringify(utenti));//La selezione salvata viene risalvata senza l'utente cancellato
+
+                // Pulisci Spazio Isolato: il processo di eliminazione è molto più semplice se i dati sono isolati per utente
+                localStorage.removeItem(`${user.email}_preferenze`);
+                localStorage.removeItem(`${user.email}_spotify_playlists`);
+                localStorage.removeItem(`${user.email}_my_joined_communities`);
+
+                // Logout
+                sessionStorage.removeItem("utenteLoggato");
+                window.location.href = "login.html"; 
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlist - Spotify</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+
+    <link rel="stylesheet" href="../style.css">
+    
+    <script src="../auth.js"></script>
+    
+    <style>        
+        /* OVERRIDE specifico per barra di ricerca */
+        .main-content {
+            background: #121212;
+        }
+
+        /* HEADER PLAYLIST */
+        .playlist-header {
+            background: linear-gradient(180deg, #535353 0%, #121212 100%);
+            padding: 80px 32px 24px;
+            display: flex; align-items: end; gap: 24px; 
+        }
+        .playlist-cover { /*copertina*/
+            width: 230px; height: 230px; min-width: 230px;
+            box-shadow: 0 4px 60px rgba(0,0,0,0.5); 
+            object-fit: cover; 
+            background-color: #282828;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 80px; color: #535353;
+            overflow: hidden; 
+        }
+
+        /*TITOLO*/
+        .playlist-info { display: flex; flex-direction: column; justify-content: end; width: 100%; }
+        .playlist-info h1 { color: white; font-size: 4rem; font-weight: 900; margin: 10px 0; cursor: pointer; border-bottom: 2px solid transparent; }
+        .playlist-info h1:hover { border-bottom: 2px solid white; }
+        .playlist-info h1:focus { outline: none; border-bottom: 2px solid #1db954; }
+
+        /*Descrizione Editabile */
+        .playlist-description-input {
+            background: transparent;
+            border: 1px solid transparent; 
+            color: #b3b3b3;
+            width: 100%;
+            resize: none; /* No resize handle */
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            font-family: inherit;
+            transition: 0.2s;
+            overflow: hidden;
+            padding: 4px 0;
+        }
+        .playlist-description-input:hover { border-bottom: 1px solid #777; }
+        .playlist-description-input:focus { 
+            outline: none; 
+            background: rgba(255,255,255,0.1); 
+            color: white; 
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        /*Tags (Chips) */
+        .tag-chip {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid transparent;
+            border-radius: 15px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            display: inline-block;
+        }
+        .tag-chip:hover { background-color: rgba(255,255,255,0.25); transform: scale(1.05); }
+        .tag-chip.active { 
+            background-color: #1db954; 
+            color: black; 
+            font-weight: 700; 
+            border-color: #1db954;
+        }
+
+        /* TABELLA BRANI */
+        .tracks-container { padding: 20px 32px; background-color: #121212; min-height: 400px; }
+        .track-row {
+            display: grid; 
+            grid-template-columns: 50px 4fr 3fr 50px; /*larghezze delle colonne */
+            padding: 10px 16px; border-radius: 4px; align-items: center; cursor: pointer; transition: 0.2s;
+        }
+        .track-row:hover { background-color: rgba(255,255,255,0.1); }
+        .track-title { color: white; font-size: 1rem; font-weight: 500; }
+        
+        /*cestino*/
+        .btn-trash { color: #b3b3b3; background: transparent; border: none; transition: 0.2s; opacity: 0; }
+        .track-row:hover .btn-trash { opacity: 1; } 
+        .btn-trash:hover { color: #e91429; transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+<div class="wrapper"> 
+    <div class="sidebar d-none d-md-flex flex-column" id="global-sidebar-container"></div> 
+
+    <div class="main-content"> 
+        <div class="playlist-header">
+            <div class="playlist-cover shadow" id="plCover">
+                <i class="fas fa-music"></i>
+            </div>
+            <div class="playlist-info"> 
+                <span class="text-uppercase fw-bold text-light" style="font-size: 0.8rem;">Playlist</span>
+                
+                <h1 id="plTitle" contenteditable="true" onblur="salvaTitolo()">Mia Playlist</h1> 
+
+                <textarea id="plDesc" class="playlist-description-input" rows="1" 
+                    placeholder="Aggiungi una descrizione opzionale..." 
+                    onblur="salvaDescrizione()"></textarea>
+
+                <div id="tagsContainer" class="d-flex flex-wrap gap-2 mb-3">
+                    </div>
+
+                <div id="plMeta" class="d-flex align-items-center gap-2 fw-bold text-white">
+                    Spotify • 0 brani
+                </div>
+            </div>
+
+            <div class="ms-auto mb-2">
+                <button class="btn btn-outline-light btn-sm rounded-pill fw-bold" onclick="eliminaPlaylist()">
+                    Elimina
+                </button>
+            </div>
+        </div>
+
+        <div class="tracks-container">
+            <div class="track-row text-secondary text-uppercase" style="font-size: 0.8rem; border-bottom: 1px solid #333; margin-bottom: 10px; cursor: default;">
+                <div>#</div>
+                <div>Titolo</div>
+                <div>Album</div>
+                <div class="text-end"><i class="fas fa-clock"></i></div>
+            </div>
+            
+            <div id="listaBrani"></div>
+        </div>
+    </div>
+</div>
+
+<div id="global-player-container"></div>
+
+<!--modale salva brano-->
+<div class="modal fade" id="saveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Aggiungi alla playlist</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body"><ul class="list-group list-group-flush" id="modalPlaylistList"></ul></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // --- LOGICA DATI ---
+    let playlists = window.getUserData('spotify_playlists') || []; /*Tutte le playlist*/
+    
+    // Preleva l'ID della playlist dalla query string e trova la playlist attiva, inviato da ricerca.html 
+    const params = new URLSearchParams(window.location.search); 
+    const playlistId = params.get('id'); 
+    let activePlaylist = playlists.find(p => p.id === playlistId); // verifica se nell'elenco delle playlist esiste quella con l'ID specificato
+
+    // --- LISTA TAG PREDEFINITI ---
+    const AVAILABLE_TAGS = [
+        "Relax", "Carica", "Focus", "Malinconia", "Happy", 
+        "Allenamento", "Viaggio", "Party", "Studio", "Gaming",
+        "Hit", "Old School", "Discovery", "Instrumental"
+    ];
+
+    // --- INIT ---
+    window.onload = function() {
+        if (activePlaylist) {
+            renderMainContent();
+        } else {
+            document.querySelector('.playlist-header').style.display = 'none';
+            document.querySelector('.tracks-container').innerHTML = "<h3 class='text-center mt-5 text-white'>Playlist non trovata o eliminata</h3><div class='text-center mt-3'><a href='../home2.html' class='btn btn-light rounded-pill fw-bold'>Torna alla Home</a></div>";
+        }
+    };
+
+    function renderMainContent() { /*preleva i dati della playlist attiva (oggetto complesso pieno di dati inseriti quando salvo un brano) e li mostra*/
+        // Titolo
+        document.getElementById('plTitle').innerText = activePlaylist.name;
+        
+        // Descrizione
+        const descField = document.getElementById('plDesc');
+        descField.value = activePlaylist.description || ""; 
+        if(activePlaylist.description && activePlaylist.description.length > 50) descField.rows = 2;
+
+        // Meta
+        document.getElementById('plMeta').innerHTML = `Spotify • ${activePlaylist.tracks.length} brani`;
+        
+        // Tags
+        renderTags();
+
+        // COPERTINA
+        const coverDiv = document.getElementById('plCover');
+        if (activePlaylist.tracks.length > 0) {
+            const firstImg = activePlaylist.tracks[0].img;
+            coverDiv.innerHTML = `<img src="${firstImg}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            coverDiv.style.backgroundColor = "transparent";
+        } else {
+            coverDiv.innerHTML = `<i class="fas fa-music"></i>`;
+            coverDiv.style.backgroundColor = "#282828";
+        }
+
+        renderTracksList();
+    }
+
+    // --- RENDERING TAGS (visualizzaztione) ---  
+
+
+
+    function renderTags() { // stato tag prima di un eventuale click
+        const container = document.getElementById('tagsContainer');
+        container.innerHTML = ''; 
+
+        AVAILABLE_TAGS.forEach(tag => {
+            const currentTags = activePlaylist.tags || [];
+            const isActive = currentTags.includes(tag);
+            
+            const chip = document.createElement('span');
+            chip.className = `tag-chip ${isActive ? 'active' : ''}`;
+            chip.innerText = tag;
+            chip.onclick = () => toggleTag(tag); //quando clicco su un tag, se è attivo allora lo disattiva e viceversa, e aggiorna la playlist
+            container.appendChild(chip);
+        });
+    }
+
+    function renderTracksList() { //
+        const list = document.getElementById('listaBrani');
+        list.innerHTML = "";
+
+        if (activePlaylist.tracks.length === 0) {
+            list.innerHTML = "<div class='text-center mt-5 text-secondary'>Questa playlist è vuota.<br>Cerca brani e clicca sul + nel player per aggiungerli.</div>";
+            return;
+        }
+
+        activePlaylist.tracks.forEach((track, index) => {
+            const row = document.createElement('div');
+            row.className = 'track-row';
+            row.innerHTML = `
+                <div class="text-secondary">${index + 1}</div> 
+                <div class="d-flex align-items-center gap-3">
+                    <img src="${track.img}" style="width: 40px; height: 40px; object-fit: cover;">
+                    <div>
+                        <div class="track-title text-white">${track.title}</div>
+                        <div class="text-secondary" style="font-size: 0.85rem;">${track.artist}</div>
+                    </div>
+                </div>
+                <div class="text-secondary text-truncate">${track.album || 'Singolo'}</div>
+                <div class="text-end">
+                    <button class="btn-trash" onclick="eliminaBrano(event, ${index})" title="Rimuovi dalla playlist">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            
+            row.addEventListener('click', () => {
+                if(window.updateGlobalPlayerUI) {
+                    window.updateGlobalPlayerUI(track);
+                }
+            });
+            list.appendChild(row);
+        });
+    }
+
+    // --- FUNZIONI DI SINCRONIZZAZIONE (AGGIORNATA: Include TAGS) ---
+
+
+
+    function syncPublicFeeds(action) {
+        // Scansiona tutte le community pubbliche
+        const communities = window.getPublicData('spotify_communities') || [];
+        
+        communities.forEach(comm => {
+            const feedKey = `feed_${comm.id}`; // specifica community (manca il prefisso global)
+            let posts = window.getPublicData(feedKey) || [];  //preleva le playlist pubblicate in quella community
+            let changed = false;
+
+    // Se aggiorno titolo, brani E TAGS di una playlist pubblica, non sa quale sia stato cambiato, 
+    // quindi itera tutte le playlist e aggiorna quella con l'ID corrispondente
+            if (action === 'update') { 
+                // Aggiorna titolo, brani E TAGS playlist
+                posts.forEach(p => {
+                    if (p.originalId === activePlaylist.id) {
+                        p.title = activePlaylist.name;
+                        p.tracks = activePlaylist.tracks; 
+                        p.tags = activePlaylist.tags; // SYNC TAGS: Fondamentale per la ricerca!
+                        changed = true;
+                    }
+                });
+            } else if (action === 'delete') {
+                const initialLen = posts.length;
+                posts = posts.filter(p => p.originalId !== activePlaylist.id);
+                if (posts.length !== initialLen) changed = true;
+            }
+
+            if (changed) {
+                window.savePublicData(feedKey, posts);
+            }
+        });
+    }
+
+    // --- FUNZIONI AGGIORNAMENTO DATI ---
+
+
+    
+    function toggleTag(tag) {
+        if (!activePlaylist.tags) activePlaylist.tags = [];
+
+        if (activePlaylist.tags.includes(tag)) {// l'utente clicca su un tag, se già presente allora è attivo quindi lo rimuove
+            activePlaylist.tags = activePlaylist.tags.filter(t => t !== tag);
+        } else {    // altrimenti lo aggiunge
+            activePlaylist.tags.push(tag);
+        }
+        window.saveUserData('spotify_playlists', playlists);
+        
+        // SYNC TAGS: Aggiorna immediatamente le community quando cambi un tag (pk è usato per filtrare le playlist)
+        syncPublicFeeds('update');
+        
+        renderTags(); 
+    }
+
+    function salvaDescrizione() {
+        const descField = document.getElementById('plDesc');
+        activePlaylist.description = descField.value.trim();
+        window.saveUserData('spotify_playlists', playlists);
+    }
+
+    function salvaTitolo() {
+        const newTitle = document.getElementById('plTitle').innerText;
+        if (activePlaylist && newTitle.trim() !== "") {
+            activePlaylist.name = newTitle.trim();
+            window.saveUserData('spotify_playlists', playlists);
+            
+            // SYNC UPDATE: Aggiorna il titolo
+            syncPublicFeeds('update');
+
+            if(window.renderGlobalSidebar) window.renderGlobalSidebar();
+        }
+    }
+
+    // --- FUNZIONI UTENTE STANDARD ---
+    window.eliminaBrano = function(event, index) { //index viene generato automaticamente durante il ciclo forEach
+        event.stopPropagation();  //stopPropagation serve per evitare che al click sul cestino si attivi anche l'evento di click sulla riga del brano (che attiva il player), in questo modo il click viene "catturato" solo dal cestino e non si propaga alla riga sottostante
+        
+        //funzione confirm restituisce un valore booleano (vero o falso) in base alla scelta dell'utente: Se l'utente clicca OK, confirm diventa true
+        if(confirm("Vuoi rimuovere questo brano dalla playlist?")) { 
+            activePlaylist.tracks.splice(index, 1); // Rimuovi 1 brano dall'array dalla posizione index in avanti
+            window.saveUserData('spotify_playlists', playlists); //activeplaylist punta ad una pl in playlists 
+            
+            // SYNC UPDATE: Aggiorna immediatamente il feed pubblico
+            syncPublicFeeds('update');
+            
+            renderMainContent(); 
+        }
+    }
+
+    window.eliminaPlaylist = function() {
+        if (confirm("Sei sicuro di voler eliminare questa playlist? L'azione è irreversibile.")) {
+            syncPublicFeeds('delete');
+
+            playlists = playlists.filter(p => p.id !== activePlaylist.id);
+            window.saveUserData('spotify_playlists', playlists);
+            window.location.href = "../home2.html";
+        }
+    }
+</script>
+
+<script src="../layout.js"></script>
+</body>
+</html>

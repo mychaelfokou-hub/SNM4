@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dettaglio Community - Spotify</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+
+    <link rel="stylesheet" href="../style.css">
+    
+    <script src="../auth.js"></script>
+    
+    <style>
+        /* --- NUOVO SFONDO FISSO --- */
+        .main-content {
+            background: linear-gradient(180deg, #7d2020 0%, #121212 240px);
+        }
+
+        /* HEADER COMMUNITY */
+        .comm-header { padding: 40px 32px 20px; display: flex; align-items: end; gap: 24px; }
+        .comm-cover { width: 200px; height: 200px; object-fit: cover; box-shadow: 0 4px 60px rgba(0,0,0,0.5); }
+        .comm-info h1 { color: white; font-weight: 900; font-size: 3.5rem; margin: 0; }
+        
+        .btn-leave { border: 1px solid #727272; background: transparent; color: white; border-radius: 30px; padding: 5px 15px; font-weight: 700; font-size: 0.8rem; margin-top: 10px; transition: 0.3s; }
+        .btn-leave:hover { border-color: white; transform: scale(1.05); }
+
+        .btn-delete-comm { background-color: #e91429; color: white; border: none; border-radius: 30px; padding: 5px 15px; font-weight: 700; font-size: 0.8rem; margin-top: 10px; margin-left: 10px; transition: 0.3s; }
+        .btn-delete-comm:hover { background-color: #ff0000; transform: scale(1.05); }
+
+        /* Bottone Modifica Info (Generico) */
+        .btn-edit-info { background-color: transparent; border: 1px solid #b3b3b3; color: white; border-radius: 30px; padding: 5px 15px; font-weight: 700; font-size: 0.8rem; margin-top: 10px; margin-left: 10px; transition: 0.3s; }
+        .btn-edit-info:hover { border-color: white; transform: scale(1.05); background-color: rgba(255,255,255,0.1); }
+
+        /* ACTIONS BAR */
+        .actions-bar { 
+            padding: 20px 32px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            position: sticky; 
+            top: 0; 
+            background-color: rgba(18,18,18,0.95); 
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            border-bottom: 1px solid #282828; 
+        }
+        
+        .search-area { display: flex; align-items: center; gap: 10px; flex-grow: 1; max-width: 600px; }
+        
+        .search-feed { 
+            background-color: #2a2a2a; 
+            border: none; 
+            border-radius: 20px; 
+            color: white; 
+            padding: 10px 40px 10px 15px; 
+            width: 100%; 
+            outline: none;
+        }
+        .search-wrapper { position: relative; width: 100%; }
+        .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #b3b3b3; }
+
+        .btn-share { background-color: #1db954; color: black; border: none; border-radius: 30px; padding: 10px 24px; font-weight: 700; transition: 0.3s; white-space: nowrap;}
+        .btn-share:hover { transform: scale(1.05); background-color: #1ed760; }
+
+        /* FILTER BUTTON & PANEL */
+        .btn-filter { 
+            background-color: #2a2a2a; 
+            color: white; 
+            border: 1px solid transparent; 
+            border-radius: 30px; 
+            padding: 8px 20px; 
+            font-weight: 600; 
+            transition: 0.2s; 
+            white-space: nowrap; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-filter:hover, .btn-filter.active { background-color: #333; border-color: #1db954; color: #1db954; }
+
+        .filter-tags-panel { 
+            display: none; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            padding: 15px 32px 10px; 
+            background-color: #181818; 
+            border-bottom: 1px solid #282828; 
+            animation: slideDown 0.2s ease;
+        }
+        .filter-tags-panel.show { display: flex; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* TAG CHIPS */
+        .tag-chip {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid transparent;
+            border-radius: 15px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .tag-chip:hover { background-color: rgba(255,255,255,0.25); transform: scale(1.05); }
+        .tag-chip.active { background-color: #1db954; color: black; font-weight: 700; border-color: #1db954; }
+
+        /* FEED GRID */
+        .feed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 30px 32px; }
+        
+        .post-card { background-color: #181818; padding: 16px; border-radius: 8px; transition: 0.3s; display: flex; gap: 15px; align-items: center; position: relative; }
+        .post-card:hover { background-color: #282828; }
+        
+        .post-img { width: 80px; height: 80px; border-radius: 4px; object-fit: cover; }
+        .post-info { flex-grow: 1; overflow: hidden; }
+        .post-title { color: white; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center;}
+        .post-user { font-size: 0.8rem; color: #b3b3b3; }
+        
+        .btn-details { background-color: transparent; border: 1px solid #727272; color: white; border-radius: 20px; padding: 5px 15px; font-size: 0.8rem; white-space: nowrap; transition: 0.2s; z-index: 2; cursor: pointer; }
+        .btn-details:hover { border-color: white; transform: scale(1.05); background-color: rgba(255,255,255,0.1); }
+
+        /* Preview Tags nella card del post */
+        .post-tags { display: flex; gap: 4px; margin-top: 4px; overflow: hidden; }
+        .mini-tag { font-size: 0.6rem; background-color: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 8px; color: #b3b3b3; white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper"> 
+    <div class="sidebar d-none d-md-flex flex-column" id="global-sidebar-container"></div>
+
+    <div class="main-content">
+        <div class="comm-header" id="headerContent"></div>
+
+        <div class="actions-bar">
+            <div class="search-area">
+                <div class="search-wrapper">
+                    <input type="text" id="feedSearch" class="search-feed" placeholder="Cerca playlist o brani..." onkeyup="filtraFeed()">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+                <button class="btn-filter" id="btnToggleFilters" onclick="toggleFilterPanel()">
+                    <i class="fas fa-filter"></i> Filtra Tag
+                </button>
+            </div>
+
+            <button class="btn-share" onclick="apriModalCondivisione()">
+                <i class="fas fa-share-square me-2"></i>Condividi Playlist
+            </button>
+        </div>
+
+        <div id="filterTagsContainer" class="filter-tags-panel"></div>
+
+        <div class="p-3 text-white fw-bold">Playlist condivise dalla community</div>
+        <div id="feedGrid" class="feed-grid"></div>
+    </div> 
+</div> 
+
+<div id="global-player-container"></div>
+
+<div class="modal fade" id="shareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Seleziona playlist da condividere</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group list-group-flush" id="shareList"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="detTitle">Dettagli Playlist</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <img id="detImg" src="" style="width: 100px; height: 100px; object-fit: cover;">
+                    <div style="flex-grow: 1;">
+                        <h3 id="detName" class="fw-bold mb-0">Nome Playlist</h3>
+                        <p id="detUser" class="text-secondary mb-0">Creato da Utente</p>
+                    </div>
+                    
+                    <div class="d-flex flex-column gap-2 ms-auto">
+                        <button class="btn btn-success rounded-pill fw-bold" id="btnImport" style="width: 100%;">
+                            <i class="fas fa-download me-2"></i>Salva in Libreria
+                        </button>
+                        
+                        <button class="btn btn-outline-danger rounded-pill fw-bold" id="btnDeletePost" style="font-size: 0.8rem; display: none;">
+                            <i class="fas fa-trash me-2"></i>Elimina dal Feed
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editTagsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">Modifica Community</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small fw-bold">NOME</label>
+                    <input type="text" id="editCommName" class="form-control bg-secondary text-white border-0">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-secondary small fw-bold">DESCRIZIONE</label>
+                    <textarea id="editCommDesc" class="form-control bg-secondary text-white border-0" rows="3"></textarea>
+                </div>
+
+                <label class="form-label text-secondary small fw-bold">TAGS (Umore)</label>
+                <div id="editTagsContainer" class="d-flex flex-wrap gap-2"></div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-transparent text-white" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-bold" onclick="salvaModificheCommunity()">Salva Modifiche</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // --- COSTANTI TAGS ---
+    const AVAILABLE_TAGS = [
+        "Relax", "Carica", "Focus", "Malinconia", "Happy", 
+        "Allenamento", "Viaggio", "Party", "Studio", "Gaming",
+        "Hit", "Old School", "Discovery", "Instrumental"
+    ];
+    let selectedFilterTags = [];
+    let tempEditTags = [];
+
+    // --- GESTIONE DATI ---
+    const params = new URLSearchParams(window.location.search); 
+    const commId = params.get('id');
+    
+    let communities = window.getPublicData('spotify_communities') || [];
+    const currentUserEmail = window.getCurrentUserEmail(); 
+    let activeComm = communities.find(c => c.id === commId); 
+
+    const feedKey = `feed_${commId}`;
+    let posts = window.getPublicData(feedKey) || [];
+
+    let shareModalInstance = null;
+    let editTagsModalInstance = null;
+
+    // --- INIT ---
+    window.onload = function() {
+        if(!activeComm) {
+            document.body.innerHTML = "<h1 class='text-white text-center mt-5'>Community non trovata</h1><div class='text-center'><a href='community.html' class='text-white'>Torna indietro</a></div>";
+            return;
+        }
+        renderHeader();
+        renderFilterTags();
+        renderFeed(posts);
+    };
+
+    function renderHeader() {
+        const container = document.getElementById('headerContent');
+        const isCreator = (activeComm.creatorEmail === currentUserEmail);
+
+        // Tasti di azione
+        let actionButtons = `
+            <button class="btn-leave ms-auto mb-2" onclick="abbandonaCommunity()">
+                <i class="fas fa-sign-out-alt me-1"></i>Abbandona
+            </button>
+        `;
+
+        if (isCreator) {
+            actionButtons += `
+                <button class="btn-edit-info mb-2" onclick="apriModalModificaCommunity()">
+                    <i class="fas fa-edit me-1"></i>Modifica Info
+                </button>
+                <button class="btn-delete-comm mb-2" onclick="eliminaCommunityTotale()">
+                    <i class="fas fa-trash me-1"></i>Elimina Community
+                </button>
+            `;
+        }
+
+        // Mostra i tag correnti
+        let tagsText = "";
+        if(activeComm.tags && activeComm.tags.length > 0) {
+            tagsText = `<div class="mt-2 d-flex gap-2">${activeComm.tags.map(t => `<span class="badge bg-secondary text-light">${t}</span>`).join('')}</div>`;
+        }
+
+        container.innerHTML = `
+            <img src="${activeComm.img}" class="comm-cover">
+            <div class="comm-info">
+                <span class="text-uppercase fw-bold text-light" style="font-size: 0.8rem;">
+                    Community
+                </span>
+                <h1>${activeComm.name}</h1>
+                <p class="text-white opacity-75 mb-1">${activeComm.desc}</p>
+                ${tagsText}
+                <div class="text-white fw-bold small mt-2"><i class="fas fa-user-friends"></i> ${activeComm.members} membri</div>
+            </div>
+            ${actionButtons}
+        `;
+        // RIMOSSO: document.querySelector('.main-content').style.background = ... (Ora gestito da CSS)
+    }
+
+    // --- MODIFICA COMMUNITY ---
+    window.apriModalModificaCommunity = function() {
+        document.getElementById('editCommName').value = activeComm.name;
+        document.getElementById('editCommDesc').value = activeComm.desc;
+        
+        tempEditTags = [...(activeComm.tags || [])]; // Clona i tag esistenti per modificarli temporaneamente senza alterare quelli originali finché non si salva
+        renderEditTags();
+        
+        const modalEl = document.getElementById('editTagsModal');
+        if (!editTagsModalInstance) {
+            editTagsModalInstance = new bootstrap.Modal(modalEl); 
+        }
+        editTagsModalInstance.show();
+    }
+
+    function renderEditTags() {
+        const container = document.getElementById('editTagsContainer');
+        container.innerHTML = "";
+        
+        //stato tags prima di un eventuale click di aggiornamento
+        AVAILABLE_TAGS.forEach(tag => {
+            const isActive = tempEditTags.includes(tag);
+            const chip = document.createElement('span');
+            chip.className = `tag-chip ${isActive ? 'active' : ''}`; 
+            chip.innerText = tag;
+            chip.onclick = () => toggleEditTag(tag);
+            container.appendChild(chip);
+        });
+    }
+
+    //click su un tag
+    function toggleEditTag(tag) {
+        if(tempEditTags.includes(tag)) {
+            tempEditTags = tempEditTags.filter(t => t !== tag);
+        } else {
+            tempEditTags.push(tag);
+        }
+        renderEditTags();
+    }
+
+    window.salvaModificheCommunity = function() {
+        const newName = document.getElementById('editCommName').value.trim();
+        const newDesc = document.getElementById('editCommDesc').value.trim();
+
+        if(!newName) {
+            alert("Il nome della community non può essere vuoto.");
+            return;
+        }
+
+        activeComm.name = newName;
+        activeComm.desc = newDesc;
+        activeComm.tags = tempEditTags;
+        
+        const idx = communities.findIndex(c => c.id === commId);
+        if(idx !== -1) {
+            communities[idx] = activeComm;
+            window.savePublicData('spotify_communities', communities);
+        }
+
+        renderHeader();
+        editTagsModalInstance.hide();
+    }
+
+
+    // --- FEED LOGIC ---
+
+    function renderFeed(list) {
+        const grid = document.getElementById('feedGrid');
+        grid.innerHTML = "";
+        
+        if(!list || list.length === 0) {
+            grid.innerHTML = "<p class='text-secondary'>Nessuna playlist condivisa ancora. Sii il primo!</p>";
+            return;
+        }
+
+        list.forEach(post => {
+            const card = document.createElement('div');
+            card.className = "post-card";
+            
+            let tagsHtml = "";
+            if (post.tags && post.tags.length > 0) {
+                tagsHtml = `<div class="post-tags">` + 
+                    post.tags.slice(0, 3).map(t => `<span class="mini-tag">${t}</span>`).join('') + 
+                    `</div>`;
+            }
+
+            const isPostCreator = (post.userEmail === currentUserEmail);
+            card.style.cursor = isPostCreator ? "pointer" : "default";
+            
+            card.onclick = function() {
+                if(isPostCreator && post.originalId) {
+                    window.location.href = `../playlist/playlist.html?id=${post.originalId}`;
+                }
+            };
+
+            card.innerHTML = `
+                <img src="${post.img}" class="post-img">
+                <div class="post-info">
+                    <div class="post-title">
+                        ${post.title} 
+                    </div>
+                    <div class="post-user">di ${post.user}</div>
+                    ${tagsHtml}
+                </div>
+                <button class="btn-details" onclick='event.stopPropagation(); mostraDettagli(${JSON.stringify(post)})'>
+                    Vedi Dettagli
+                </button>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    //lista con le playlist filtrate in base alla ricerca testuale e ai tag selezionati
+    window.filtraFeed = function() {
+        const q = document.getElementById('feedSearch').value.toLowerCase();
+        
+        const filtered = posts.filter(p => {
+            const matchTitle = p.title.toLowerCase().includes(q);
+            const matchTrack = p.tracks && p.tracks.some(t => t.title.toLowerCase().includes(q));
+            const matchText = matchTitle || matchTrack;
+
+            const matchTags = selectedFilterTags.length === 0 || 
+                (p.tags && selectedFilterTags.every(tag => p.tags.includes(tag)));
+
+            return matchText && matchTags;
+        });
+        
+        renderFeed(filtered);
+    }
+
+    //bottone filtra tag
+    window.toggleFilterPanel = function() {
+        const panel = document.getElementById('filterTagsContainer');
+        const btn = document.getElementById('btnToggleFilters');
+        
+        if (panel.classList.contains('show')) {
+            panel.classList.remove('show');
+            btn.classList.remove('active');
+        } else {
+            panel.classList.add('show');
+            btn.classList.add('active');
+        }
+    }
+
+    //tags nel bottone filtra tag
+    function renderFilterTags() {
+        const container = document.getElementById('filterTagsContainer');
+        container.innerHTML = "";
+        AVAILABLE_TAGS.forEach(tag => {
+            const isActive = selectedFilterTags.includes(tag);
+            const chip = document.createElement('span');
+            chip.className = `tag-chip ${isActive ? 'active' : ''}`;
+            chip.innerText = tag;
+            chip.onclick = () => {
+                if (selectedFilterTags.includes(tag)) {
+                    selectedFilterTags = selectedFilterTags.filter(t => t !== tag);
+                } else {
+                    selectedFilterTags.push(tag);
+                }
+                renderFilterTags(); 
+                filtraFeed(); 
+            };
+            container.appendChild(chip);
+        });
+    }
+
+    // --- SHARE MODAL ---
+    window.apriModalCondivisione = function() {
+        const modalEl = document.getElementById('shareModal');
+        if (!shareModalInstance) {
+            shareModalInstance = new bootstrap.Modal(modalEl);
+        }
+
+        window.populatePlaylistList('shareList', (pl) => { //la funzione inserisce la playlist (si trova in layout.js) e al click esegue la callback (pubblica una playlist)
+            const currentUser = window.getCurrentUser();
+            const userName = currentUser.username || currentUser.nome || currentUser.email;
+
+            const alreadyShared = posts.some(p => p.title === pl.name && p.userEmail === currentUser.email);
+            if(alreadyShared) { 
+                alert("Hai già condiviso questa playlist qui!"); 
+                return; 
+            }
+
+            const safeTracks = pl.tracks || [];
+            const safeImg = (safeTracks.length > 0) ? safeTracks[0].img : 'https://placehold.co/200';
+
+            const newPost = {
+                id: 'post_' + Date.now(),
+                title: pl.name,
+                user: userName,
+                userEmail: currentUser.email,
+                originalId: pl.id, 
+                tracks: safeTracks, 
+                tags: pl.tags || [], 
+                img: safeImg
+            };
+            
+            posts.unshift(newPost);
+            window.savePublicData(feedKey, posts);
+            renderFeed(posts);
+            shareModalInstance.hide();
+        });
+        
+        shareModalInstance.show();
+    }
+
+    // --- MODALE DI UNA PLAYLIST - BOTTONE "VEDI DETTAGLI"---
+    window.mostraDettagli = function(postObj) {
+        document.getElementById('detName').innerText = postObj.title;
+        document.getElementById('detUser').innerText = "Creato da " + postObj.user;
+        document.getElementById('detImg').src = postObj.img;
+        
+        const btnImport = document.getElementById('btnImport');
+        btnImport.onclick = () => {
+            let currentPlaylists = window.getUserData('spotify_playlists') || [];
+            currentPlaylists.push({ 
+                id: 'pl_' + Date.now(), 
+                name: postObj.title + " (Import)", 
+                tracks: postObj.tracks || [],
+                tags: postObj.tags || [] 
+            });
+            window.saveUserData('spotify_playlists', currentPlaylists);
+            if(window.renderGlobalSidebar) window.renderGlobalSidebar();
+            
+            const modalEl = document.getElementById('detailsModal');
+            bootstrap.Modal.getInstance(modalEl).hide();
+            alert("Playlist salvata nella tua libreria!");
+        };
+
+        const btnDelete = document.getElementById('btnDeletePost');
+        if (postObj.userEmail === currentUserEmail) {
+            btnDelete.style.display = 'block';
+            btnDelete.onclick = () => {
+                if(confirm("Vuoi rimuovere questa playlist dal feed della community?")) {
+                    posts = posts.filter(p => p.id !== postObj.id);
+                    window.savePublicData(feedKey, posts);
+                    renderFeed(posts);
+                    const modalEl = document.getElementById('detailsModal');
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                }
+            };
+        } else {
+            btnDelete.style.display = 'none';
+        }
+
+        const modalEl = document.getElementById('detailsModal');
+        new bootstrap.Modal(modalEl).show();
+    }
+
+    // --- LEAVE / DELETE ---
+    window.abbandonaCommunity = function() {
+        if(confirm("Vuoi davvero lasciare questa community?")) {
+            let myJoinedIds = window.getUserData('my_joined_communities') || [];
+            myJoinedIds = myJoinedIds.filter(id => id !== commId);
+            window.saveUserData('my_joined_communities', myJoinedIds);
+            
+            activeComm.members = Math.max(0, activeComm.members - 1);
+            window.savePublicData('spotify_communities', communities);
+
+            window.location.href = "community.html";
+        }
+    }
+
+    window.eliminaCommunityTotale = function() {
+        if(confirm("ATTENZIONE: Sei il creatore di questa community. Eliminandola, nessun utente potrà più vederla. Confermi?")) {
+            communities = communities.filter(c => c.id !== commId);
+            window.savePublicData('spotify_communities', communities);
+            localStorage.removeItem(feedKey);
+
+            alert("Community eliminata definitivamente.");
+            window.location.href = "community.html";
+        }
+    }
+</script>
+
+<script src="../layout.js"></script>
+</body>
+</html>

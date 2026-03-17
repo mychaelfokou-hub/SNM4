@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Risultati Ricerca - Spotify</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="../images/favicon.png">
+
+    <link rel="stylesheet" href="../style.css">
+    
+    <script src="../auth.js"></script>
+    
+    <style>        
+        /* SEARCH HEADER (Sticky in alto) */
+        .search-header {
+            position: sticky;
+            top: 0;
+            background-color: #121212; 
+            padding: 20px 32px;
+            z-index: 10; 
+            border-bottom: 1px solid #282828;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input-inline {
+            background-color: #2a2a2a;
+            border: 0;
+            border-radius: 500px;
+            color: white;
+            padding: 12px 20px;
+            width: 350px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        
+        .btn-search {
+            background-color: #1db954;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            color: black;
+            font-weight: bold;
+            margin-left: 15px;
+            transition: 0.2s;
+        }
+        .btn-search:hover { transform: scale(1.05); }
+
+        /* RESULTS GRID */
+        .results-container { 
+            display: grid; 
+            /*
+            - repeat: funzione
+            - auto-fill: riempie automaticamente le righe con quante carte riesce a starci sapendo che le carte hanno grandezza minima standard di 180px
+            - minmax(180px, 1fr): ogni carta avrà una larghezza minima di 180px e massima di 1 frazione dello spazio disponibile a destra eventualmente rimasto rispetto al gap tra le carte (tappa buchi)
+            */
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 20px; 
+            padding: 30px 32px; 
+        }
+        
+        .track-card { 
+            background-color: #181818; 
+            padding: 16px; 
+            border-radius: 6px; 
+            transition: 0.3s; 
+            cursor: pointer; 
+            position: relative; 
+        }
+        .track-card:hover { background-color: #282828; }
+        .track-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover /*adatta immagine al contenitore*/; border-radius: 4px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .track-title { font-weight: bold; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: white; } 
+        .track-artist { font-size: 0.85rem; color: #b3b3b3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="sidebar d-none d-md-flex flex-column" id="global-sidebar-container"></div> <!--iniezione-->
+
+    <div class="main-content"> 
+        <div class="search-header">
+            <input type="text" id="query" class="search-input-inline" placeholder="Cerca brani o artisti..." onkeypress="handleEnter(event)">
+            <button class="btn-search" onclick="cercaBrani()">Cerca</button>
+        </div>
+
+        <h2 class="ms-4 mt-4 px-2">Risultati</h2>
+        <div class="results-container" id="risultati">
+            <p class="text-secondary">Digita qualcosa per cercare...</p>
+        </div>
+    </div>
+</div>
+
+<div id="global-player-container"></div>
+
+<div class="modal fade" id="saveModal" tabindex="-1" aria-hidden="true"> <!-- modal fade nasconde il modal finché non viene attivato con .show-->
+    <div class="modal-dialog modal-dialog-centered"> 
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Salva in playlist</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body"><ul class="list-group list-group-flush" id="modalPlaylistList"></ul></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // --- FUNZIONE RICERCA ---
+    async function cercaBrani() {
+        const query = document.getElementById("query").value;
+        const risultatiDiv = document.getElementById("risultati"); /*sotto a "Risultati" */
+        
+        if (!query) return;
+        
+        risultatiDiv.innerHTML = "<p style='color:white;'>Caricamento in corso...</p>"; //nel frattempo...
+
+        try {
+            const token = await window.getAccessToken();
+            if (!token) throw new Error("Impossibile ottenere token");
+
+            const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=12`, {
+                headers: { "Authorization": "Bearer " + token }
+            });
+
+            const data = await response.json();
+            risultatiDiv.innerHTML = ""; 
+            
+            if (!data.tracks || data.tracks.items.length === 0) {
+                risultatiDiv.innerHTML = "<p>Nessun risultato trovato.</p>";
+                return;
+            }
+
+            data.tracks.items.forEach(track => {
+                const card = document.createElement("div");
+                card.className = "track-card";
+                
+                const imgUrl = track.album.images.length ? track.album.images[0].url : 'https://placehold.co/200';
+                const artistName = track.artists[0].name;
+                const artistId = track.artists[0].id;
+                const albumName = track.album.name;
+                const releaseYear = track.album.release_date.split('-')[0];
+                const duration = track.duration_ms; // Recupera la durata per il player
+
+                card.innerHTML = `
+                    <img src="${imgUrl}" alt="Cover">
+                    <div class="track-title">${track.name}</div>
+                    <div class="track-artist">${artistName}</div>
+                `;
+                
+                //callback: al click sulla card attiva la funzione selezionaBrano nel file layout.js
+                card.addEventListener('click', () => { 
+                    window.selezionaBrano(imgUrl, track.name, artistName, releaseYear, artistId, albumName, duration);
+                });
+
+                risultatiDiv.appendChild(card);
+            });
+        } catch (error) {
+            console.error("Errore API:", error);
+            risultatiDiv.innerHTML = "<p style='color:red'>Errore durante la ricerca.</p>";
+        }
+    }
+
+    //barra di ricerca: quando cerco in un secondo memonto
+    function handleEnter(event) { /*event è il tasto premuto sulla barra di ricerca (sopra)*/
+        if (event.key === "Enter") cercaBrani();
+    }
+
+    // --- INIT ---
+    window.onload = function() {
+        const params = new URLSearchParams(window.location.search);//oggetto per gestire i parametri nella URL
+        if (params.get('q')) { //se c'è una query la inserisce nella barra di ricerca e avvia la ricerca
+            document.getElementById("query").value = params.get('q');
+            cercaBrani();
+        }
+    };
+</script>
+
+<script src="../layout.js"></script>
+</body>
+</html>
