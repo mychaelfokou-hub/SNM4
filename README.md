@@ -3,4 +3,5 @@ una piattaforma web interattiva che permette agli utenti di creare, gestire e co
 
 Essendo un progetto focalizzato sulle logiche architetturali front-end, ho utilizzato **HTML, CSS, JavaScript Vanilla e il framework Bootstrap 5**, 
 sviluppando l'applicazione attraverso un approccio  'a strati' (UI, Componentistica Globale, Sicurezza, Gestione Dati e API).
+
 Per informazioni più approfondite consultare la documentazione :-)
